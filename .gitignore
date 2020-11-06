@@ -128,4 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 Pipfile.lock
-~$Articulate words.xlsx
+~*.xlsx
+Articulate words.xlsx
+Animal Vegetable Mineral 20 Questions Words.xlsx
+Pictionary Board Game words.xlsx
+Pictionary Card Game Words.xlsx

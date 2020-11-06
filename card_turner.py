@@ -217,7 +217,8 @@ def get_color(wb, c):
     return 'white' if argb == '00000000' else '#' + argb[-6:]
 
 def stripquotes(s):
-    """ Strip matching quotes """
+    """ Enforce to be a string and strip matching quotes """
+    s = str(s)
     return s.lstrip('"').rstrip('"')
 
 # -----------------------------------------------------------------------------------------
