@@ -142,7 +142,7 @@ class App():
             btn1.bind('<Button-1>', self.handle_draw)
             btn1.pack(side=LEFT)
 
-            btn2 = Button(master=f2, text='⬆︎', highlightbackground=bg)
+            btn2 = Button(master=f2, text='⬆︎',  bg='gray', highlightbackground=bg)
             btn2.bind('<Button-1>', self.handle_undraw)
             btn2.pack(side=RIGHT)
 
@@ -218,8 +218,8 @@ def get_color(wb, c):
 
 def stripquotes(s):
     """ Enforce to be a string and strip matching quotes """
-    s = str(s)
-    return s.lstrip('"').rstrip('"')
+
+    return  str(s).lstrip('"').rstrip('"')
 
 # -----------------------------------------------------------------------------------------
 # Main code
