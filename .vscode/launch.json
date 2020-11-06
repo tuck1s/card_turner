@@ -8,10 +8,11 @@
             "name": "Python: card turner",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "card_turner.py",
             "console": "integratedTerminal",
             "args": [
-                "articulate.ini",
+                // "-bg 202020",
+                "Articulate words.xlsx",
             ],
             "env": {
                 "TK_SILENCE_DEPRECATION": "1"

@@ -3,13 +3,9 @@
 import argparse, configparser, random, time
 from tkinter import *
 from datetime import datetime
-
-# Dump out a configparser section as a pure dict, removing the self-named default section
-def dump_section(s):
-    d = dict(s.items())
-    dsect = s.name
-    del(d[dsect])
-    return d
+import openpyxl
+from openpyxl.styles import colors
+from theme_and_tint_to_rgb import theme_and_tint_to_rgb
 
 class Deck():
     """A deck comprises cards that can be shuffled, drawn, undrawn. Drawn cards go onto the discard pile"""
@@ -73,21 +69,7 @@ class Deck():
         else:
             return c
 
-
-def get_decks(config):
-    decks = []
-    for i in config.sections():
-        if i != 'main':
-            color = config[i].get('color', None)
-            textcolor = config[i].get('textcolor', None)
-            d = Deck(i, color, textcolor)
-            cards = config[i].get('cards', None)
-            if cards:
-                d.add(cards.lstrip('"').rstrip('"').split(',')) # remove quotation marks if any
-            d.shuffle()
-            decks.append(d)
-    return decks
-
+# -----------------------------------------------------------------------------------------
 
 class App():
     def handle_draw(self, event):
@@ -133,12 +115,11 @@ class App():
         self.timer_label['text'] = '{:02}:{:02}'.format(int(minutes), int(seconds))
         self.window.after(1000, self.update_clock)
 
-    def __init__(self, decks, w):
+    def __init__(self, title, decks, bg):
         self.window = Tk()
         self.window.attributes('-topmost', 1) # bring window in front of others
-        self.window.title(w.get('title'))
+        self.window.title(title)
         self.decks = decks
-        bg=w.get('color')
 
         f_width = 100
         frm = Frame(master=self.window, width=f_width, bg=bg)
@@ -193,21 +174,62 @@ class App():
         self.window.mainloop()
 
 # -----------------------------------------------------------------------------------------
+
+def get_decks(f):
+    """ Get card deck categories, colors and text contents from Excel file. Always loads the first sheet i.e. the active one """
+
+    wb = openpyxl.load_workbook(f.name)
+    ws = wb.active
+    # Pick up deck names from the first row
+    decks = []
+    for j in range(1, ws.max_column+1):
+        i = ws.cell(column=j, row=1)
+        name = i.value
+        if name:
+            text_color = get_color(wb, i.font.color)
+            bg_color = get_color(wb, i.fill.start_color)
+            d = Deck(name, bg_color, text_color)
+
+            # Pick up the cards from each column
+            cards = []
+            area = ws.iter_cols(min_row=2, min_col=j, max_col=j, values_only=True)
+            for col in area:
+                for item in col:
+                    if item != None:
+                        d.add(stripquotes(item))
+
+            print('{:20} {} cards'.format(d.name, len(d.cards)))
+            d.shuffle()
+        decks.append(d)
+    return  ws.title, decks
+
+def get_color(wb, c):
+    """ Returns the RGB color from an Excel Color attribute, stripping off the alpha """
+    if c.type == 'rgb':
+        argb = c.rgb
+    elif c.type == 'theme':
+        argb = theme_and_tint_to_rgb(wb, c.theme, c.tint)
+    elif c.type == 'indexed':
+        argb = colors.COLOR_INDEX[c.value] # best effort, untested
+    else:
+        raise Exception('Unknown Excel color type')
+    # map 'no fill' to white
+    return 'white' if argb == '00000000' else '#' + argb[-6:]
+
+def stripquotes(s):
+    """ Strip matching quotes """
+    return s.lstrip('"').rstrip('"')
+
+# -----------------------------------------------------------------------------------------
 # Main code
 # -----------------------------------------------------------------------------------------
 parser = argparse.ArgumentParser(description='Simple card turning game app')
-parser.add_argument('inifile', metavar='file.ini', type=argparse.FileType('r'),
-                    help='Configuration file')
+parser.add_argument('excelfile', metavar='file.xlsx', type=argparse.FileType('r'),
+                    help='Excel input file')
+parser.add_argument('-bg', '--background', type=str, action='store', default='#000000',
+                    help='Background color e.g. black, 202020')
 args = parser.parse_args()
-config = configparser.ConfigParser(defaults= {
-    'main': {
-        'width': 400,
-        'height': 400,
-        'color': 'black',
-        'title': 'Card turner'
-    }
-})
-config.read_file(args.inifile)
-decks = get_decks(config)
+title, decks = get_decks(args.excelfile)
 print('{} card decks read'.format(len(decks)))
-App(decks, config['main'])
+App(title, decks, args.background)
+
