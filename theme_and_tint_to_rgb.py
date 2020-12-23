@@ -1,4 +1,10 @@
 from colorsys import rgb_to_hls, hls_to_rgb
+# From: https://stackoverflow.com/questions/58429823/getting-excel-cell-background-themed-color-as-hex-with-openpyxl/58443509#58443509
+#   which refers to: https://pastebin.com/B2nGEGX2 (October 2020)
+#       Updated to use list(elem) instead of the deprecated elem.getchildren() method
+#       which has now been removed completely from Python 3.9 onwards.
+#
+
 #https://bitbucket.org/openpyxl/openpyxl/issues/987/add-utility-functions-for-colors-to-help
 
 RGBMAX = 0xff  # Corresponds to 255
@@ -46,11 +52,11 @@ def get_theme_colors(wb):
 
     for c in ['lt1', 'dk1', 'lt2', 'dk2', 'accent1', 'accent2', 'accent3', 'accent4', 'accent5', 'accent6']:
         accent = firstColorScheme.find(QName(xlmns, c).text)
-
-        if 'window' in accent.getchildren()[0].attrib['val']:
-            colors.append(accent.getchildren()[0].attrib['lastClr'])
-        else:
-            colors.append(accent.getchildren()[0].attrib['val'])
+        for i in list(accent): # walk all child nodes, rather than assuming [0]
+            if 'window' in i.attrib['val']:
+                colors.append(i.attrib['lastClr'])
+            else:
+                colors.append(i.attrib['val'])
 
     return colors
 
